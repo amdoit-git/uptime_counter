@@ -1,23 +1,26 @@
-package com.example.uptimecounter
+package com.example.uptimecounter.ui
 
-import android.content.Context
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import com.example.uptimecounter.R
+import com.example.uptimecounter.creator.Creator
+import com.example.uptimecounter.presentation.mapper.SecondsToTimeMapper
+import com.example.uptimecounter.presentation.mapper.TimeToSecondsMapper
 
-const val FILE_NAME = "UPTIME_SECONDS"
 const val SECONDS_KEY = "SECONDS_KEY"
 
 class MainActivity : AppCompatActivity() {
 
     private var timerText: TextView? = null
-    private var sharedPreferences: SharedPreferences? = null
     private val handler = Handler(Looper.getMainLooper())
     private var seconds: Int = 0
     private var stopped = false
+
+    private val saveTime = Creator.provideSaveTimeUseCase()
+    private val getTime = Creator.provideGetTimeUseCase()
 
     init {
         doEverySecond()
@@ -28,14 +31,12 @@ class MainActivity : AppCompatActivity() {
 
         setContentView(R.layout.activity_main)
 
-        sharedPreferences = applicationContext.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE)
-
         timerText = findViewById(R.id.time)
 
         savedInstanceState?.let {
             seconds = it.getInt(SECONDS_KEY, 0)
         } ?: run {
-            seconds = sharedPreferences?.getInt(SECONDS_KEY, 0) ?: 0
+            seconds = TimeToSecondsMapper.map(getTime.execute())
         }
 
         timerText?.text = seconds.toString()
@@ -56,7 +57,9 @@ class MainActivity : AppCompatActivity() {
         timerText?.text = seconds.toString()
 
         if (stopped) {
-            sharedPreferences?.edit()?.putInt(SECONDS_KEY, seconds)?.apply()
+            saveTime.execute(
+                SecondsToTimeMapper.map(seconds)
+            )
         }
     }
 
@@ -67,7 +70,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        sharedPreferences?.edit()?.putInt(SECONDS_KEY, seconds)?.apply()
+        saveTime.execute(
+            SecondsToTimeMapper.map(seconds)
+        )
         stopped = true
     }
 
