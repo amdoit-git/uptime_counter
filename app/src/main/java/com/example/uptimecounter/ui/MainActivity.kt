@@ -7,20 +7,20 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import com.example.uptimecounter.R
 import com.example.uptimecounter.creator.Creator
+import com.example.uptimecounter.presentation.UpTimeView
 import com.example.uptimecounter.presentation.mapper.SecondsToTimeMapper
 import com.example.uptimecounter.presentation.mapper.TimeToSecondsMapper
+import com.example.uptimecounter.ui.models.UpTimeState
 
 const val SECONDS_KEY = "SECONDS_KEY"
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), UpTimeView {
 
     private var timerText: TextView? = null
     private val handler = Handler(Looper.getMainLooper())
     private var seconds: Int = 0
-    private var stopped = false
 
-    private val saveTime = Creator.provideSaveTimeUseCase()
-    private val getTime = Creator.provideGetTimeUseCase()
+    private val presenter = Creator.provideUpTimePresenter(this)
 
     init {
         doEverySecond()
@@ -35,16 +35,15 @@ class MainActivity : AppCompatActivity() {
 
         savedInstanceState?.let {
             seconds = it.getInt(SECONDS_KEY, 0)
+            timerText?.text = seconds.toString()
         } ?: run {
-            seconds = TimeToSecondsMapper.map(getTime.execute())
+            presenter.onCreate()
         }
-
-        timerText?.text = seconds.toString()
     }
 
     override fun onStart() {
         super.onStart()
-        stopped = false
+        presenter.onStart()
     }
 
     private fun doEverySecond() {
@@ -54,13 +53,7 @@ class MainActivity : AppCompatActivity() {
             doEverySecond()
         }, SECONDS_KEY, 1000L)
 
-        timerText?.text = seconds.toString()
-
-        if (stopped) {
-            saveTime.execute(
-                SecondsToTimeMapper.map(seconds)
-            )
-        }
+        presenter.doEverySecond(seconds)
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -70,10 +63,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        saveTime.execute(
-            SecondsToTimeMapper.map(seconds)
-        )
-        stopped = true
+        presenter.onStop(seconds)
     }
 
     override fun onDestroy() {
@@ -82,5 +72,10 @@ class MainActivity : AppCompatActivity() {
         if (isFinishing) {
             handler.removeCallbacksAndMessages(SECONDS_KEY)
         }
+    }
+
+    override fun render(state: UpTimeState) {
+        timerText?.text = state.seconds.toString()
+        seconds = state.seconds
     }
 }
