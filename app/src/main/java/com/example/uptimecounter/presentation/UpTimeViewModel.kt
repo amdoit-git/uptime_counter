@@ -10,6 +10,8 @@ import com.example.uptimecounter.presentation.mapper.SecondsToTimeMapper
 import com.example.uptimecounter.presentation.mapper.TimeToSecondsMapper
 import com.example.uptimecounter.ui.SECONDS_KEY
 
+class LiveData<T> : MutableLiveData<T>()
+
 class UpTimeViewModel(application: Application) : AndroidViewModel(application) {
 
     private var stopped = false
@@ -17,9 +19,12 @@ class UpTimeViewModel(application: Application) : AndroidViewModel(application) 
     private val saveTime = Creator.provideSaveTimeUseCase()
     private val getTime = Creator.provideGetTimeUseCase()
 
-    val lifeData = MutableLiveData<String>()
+    val lifeData = LiveData<String>()
     private val handler = Handler(Looper.getMainLooper())
     private var seconds = 0
+    private var index = 1
+
+    val live = LiveDataWithStartDataSet<Test>()
 
     init {
 
@@ -28,10 +33,38 @@ class UpTimeViewModel(application: Application) : AndroidViewModel(application) 
         lifeData.postValue(seconds.toString())
 
         doEverySecond()
+
+        testTimer()
+    }
+
+    fun getData(): LiveData<String> {
+        return lifeData
     }
 
     fun onStart() {
         stopped = false
+    }
+
+    fun testTimer(){
+
+        handler.postDelayed({
+            index++
+            if(index<7) testTimer()
+        }, SECONDS_KEY, 5000L)
+
+        if(index%2==0){
+            live.postValue(Test.T1(index))
+        }
+        else{
+
+            val list = mutableListOf<Int>()
+
+            for (i in 0 until index){
+                list.add(i)
+            }
+
+            live.postValue(Test.T2(list))
+        }
     }
 
     fun doEverySecond() {

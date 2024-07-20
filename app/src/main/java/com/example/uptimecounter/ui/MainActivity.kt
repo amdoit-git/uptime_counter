@@ -1,6 +1,7 @@
 package com.example.uptimecounter.ui
 
 import android.os.Bundle
+import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
@@ -26,6 +27,10 @@ class MainActivity : AppCompatActivity() {
 
         viewModel.lifeData.observe(this) {
             timerText?.text = it
+        }
+
+        viewModel.live.observe(this) {
+            Log.d("TEST_MODE", it.toString())
         }
     }
 
